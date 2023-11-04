@@ -1,97 +1,72 @@
-import React, { Component } from 'react';
+import React, { useEffect, useState } from 'react';
 import Searchbar from './Searchbar/Searchbar';
 import ImageGallery from './ImageGallery/ImageGallery';
 import Button from './Button/Button';
 import Modal from './Modal/Modal';
 import Loader from './Loader/Loader';
 import fetchImages from './fetchImages';
-import style from './App.module.css';
+import styles from './App.module.css';
 
-class App extends Component {
-  constructor() {
-    super();
-    this.state = {
-      query: '',
-      images: [],
-      page: 1,
-      largeImageURL: '',
-      showModal: false,
-      loading: false,
-      hasMoreImages: true,
-    };
-  }
 
-  fetchImagesData = async () => {
-    const { query, page, hasMoreImages } = this.state;
+const App = () => {
+  const [query, setQuery] = useState('');
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [largeImageURL, setLargeImageURL] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [hasMoreImages, setHasMoreImages] = useState(true);
+
+  useEffect(() => {
     if (!query || !hasMoreImages) return;
 
-    this.setState({ loading: true });
+    setLoading(true);
 
-    try {
-      const data = await fetchImages(query, page);
+    fetchImages(query, page)
+      .then((data) => {
+        setImages((prevImages) => [...prevImages, ...data]);
+        setHasMoreImages(data.length === 12);
+      })
+      .catch((error) => {
+        console.error('Error fetching images:', error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  }, [query, page, hasMoreImages]);
 
-      this.setState((prevState) => ({
-        images: [...prevState.images, ...data],
-        hasMoreImages: data.length === 12,
-      }));
-    } catch (error) {
-      console.error('Error fetching images:', error);
-    } finally {
-      this.setState({ loading: false });
-    }
+  const handleFormSubmit = (newQuery) => {
+    setQuery(newQuery);
+    setPage(1);
+    setImages([]);
+    setHasMoreImages(true);
   };
 
-
-  componentDidUpdate(prevProps, prevState,_) {
-    if (prevState.query !== this.state.query || prevState.page !== this.state.page) {
-      this.fetchImagesData();
-    }
-  }
-
-  handleFormSubmit = (newQuery) => {
-    this.setState({
-      query: newQuery,
-      page: 1,
-      images: [],
-      hasMoreImages: true,
-    });
+  const handleLoadMore = () => {
+    setPage((prevPage) => prevPage + 1);
   };
 
-  handleLoadMore = () => {
-    this.setState((prevState) => ({
-      page: prevState.page + 1,
-    }));
+  const handleImageClick = (largeImageURL) => {
+    setLargeImageURL(largeImageURL);
+    setShowModal(true);
   };
 
-  handleImageClick = (largeImageURL) => {
-    this.setState({
-      largeImageURL,
-      showModal: true,
-    });
+  const closeModal = () => {
+    setLargeImageURL('');
+    setShowModal(false);
   };
 
-  closeModal = () => {
-    this.setState({
-      largeImageURL: '',
-      showModal: false,
-    });
-  };
-
-  render() {
-    const { images, largeImageURL, showModal, loading, hasMoreImages } = this.state;
-
-    return (
-      <div className={style.App}>
-        <Searchbar onSubmit={this.handleFormSubmit} />
-        <ImageGallery images={images} onImageClick={this.handleImageClick} />
-        {loading && <Loader visible={true} />}
-        {hasMoreImages && images.length > 0 && <Button onClick={this.handleLoadMore} />}
-        {showModal && (
-          <Modal largeImageURL={largeImageURL} onClose={this.closeModal} />
-        )}
-      </div>
-    );
-  }
-}
+  return (
+    <div className={styles.App}>
+      <Searchbar onSubmit={handleFormSubmit} />
+      <ImageGallery images={images} onImageClick={handleImageClick} />
+      {loading && <Loader visible={true} />}
+      {hasMoreImages && images.length > 0 && <Button onClick={handleLoadMore} />}
+      {showModal && (
+        <Modal largeImageURL={largeImageURL} onClose={closeModal} />
+      )}
+    </div>
+  );
+};
 
 export default App;

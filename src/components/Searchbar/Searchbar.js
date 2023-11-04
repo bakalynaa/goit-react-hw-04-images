@@ -1,41 +1,27 @@
-import React, { Component } from 'react';
+import React, { useState } from 'react';
 import styles from './Searchbar.module.css'
 
-class Searchbar extends Component {
-  state = {
-    query: '',
-    isLoading: false,
+const Searchbar = ({ onSubmit }) => {
+  const [query, setQuery] = useState('')
+
+
+  const handleChange = (e) => {
+    setQuery(e.target.value);
   };
 
-  handleChange = (e) => {
-    this.setState({ query: e.target.value });
-  };
-
-  handleSubmit = (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
-    const { query } = this.state;
-    if (query.trim() === '') return;
-    this.setState({ isLoading: true });
-    this.props.onSubmit(query);
-    this.setState({ query: '', isLoading: false });
+    onSubmit(query)
+    setQuery('')
   };
-
-  render() {
-    const { query, isLoading } = this.state;
 
     return (
       <header className={styles.Searchbar}>
-        <form onSubmit={this.handleSubmit} className={styles.SearchForm}>
+        <form onSubmit={handleSubmit} className={styles.SearchForm}>
             <button
               type="submit"
-              disabled={isLoading}
               className={styles.SearchFormButton}
-            >
-              {isLoading ? (
-                'Loading...'
-              ) : (
-                'Search'
-              )}
+            >Search
             </button>
             <input
               className={styles.SearchFormInput}
@@ -44,13 +30,11 @@ class Searchbar extends Component {
               autoFocus
               placeholder="Search images and photos"
               value={query}
-              onChange={this.handleChange}
-              disabled={isLoading}
+              onChange={handleChange}
             />
         </form>
       </header>
     );
-  }
 }
 
 export default Searchbar;
